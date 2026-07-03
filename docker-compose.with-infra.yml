@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: go-uptime-monitor-e2e-postgres
+    environment:
+      POSTGRES_USER: uptimemonitor
+      POSTGRES_PASSWORD: test-uptime-db
+      POSTGRES_DB: uptimemonitor
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uptimemonitor -d uptimemonitor"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  app:
+    build: .
+    container_name: go-uptime-monitor-e2e-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GIN_MODE: release
+      GO_UPTIME_MONITOR_HTTP_PORT: 8080
+      GO_UPTIME_MONITOR_DATABASE_HOST: postgres
+      GO_UPTIME_MONITOR_DATABASE_PORT: 5432
+      GO_UPTIME_MONITOR_DATABASE_NAME: uptimemonitor
+      GO_UPTIME_MONITOR_DATABASE_USER: uptimemonitor
+      GO_UPTIME_MONITOR_DATABASE_PASSWORD: test-uptime-db
+    ports:
+      - "${GO_UPTIME_MONITOR_HTTP_PORT:-18080}:8080"

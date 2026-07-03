@@ -1,0 +1,21 @@
+services:
+  go-uptime-monitor:
+    build: .
+    container_name: go-uptime-monitor
+    env_file: .env
+    ports:
+      - "${GO_UPTIME_MONITOR_HTTP_PORT:-8080}:8080"
+    restart: unless-stopped
+    networks:
+      - infra
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  infra:
+    external: true
+    name: infra

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build -o uptime-monitor .
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start test environment
+        run: docker compose -f docker-compose.with-infra.yml up -d --build --wait
+
+      - name: Run migrations
+        run: docker compose -f docker-compose.with-infra.yml run --rm app ./uptime-monitor migrate
+
+      - name: Check health endpoint
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:18080/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Health check failed"
+          docker compose -f docker-compose.with-infra.yml logs
+          exit 1
+
+      - name: Stop test environment
+        if: always()
+        run: docker compose -f docker-compose.with-infra.yml down -v
