@@ -14,6 +14,8 @@ type Config struct {
 	SessionSecret string `envconfig:"GO_UPTIME_MONITOR_SESSION_SECRET" required:"true"`
 	SessionSecure bool   `envconfig:"GO_UPTIME_MONITOR_SESSION_SECURE" default:"false"`
 
+	EnablePlaywrightAPI bool `envconfig:"GO_UPTIME_MONITOR_ENABLE_PLAYWRIGHT_API" default:"false"`
+
 	Database DatabaseConfig
 }
 

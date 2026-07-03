@@ -125,6 +125,15 @@ func runServer(cfg *config.Config) {
 		admin.POST("/logout", h.Logout)
 	}
 
+	if cfg.EnablePlaywrightAPI {
+		pw := r.Group("/api/playwright")
+		{
+			pw.POST("/sql", h.PlaywrightExecuteSQL)
+			pw.POST("/clear-table", h.PlaywrightClearTable)
+			pw.POST("/create-user", h.PlaywrightCreateUser)
+		}
+	}
+
 	srv := &http.Server{
 		Addr:         ":" + cfg.HTTPPort,
 		Handler:      r,

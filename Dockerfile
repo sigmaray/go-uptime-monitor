@@ -18,6 +18,7 @@ RUN apk add --no-cache tzdata wget \
     && adduser -S appuser -G appgroup
 
 COPY --from=builder /app/uptime-monitor .
+COPY --from=builder /app/templates ./templates
 
 RUN chown -R appuser:appgroup /app
 

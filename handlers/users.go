@@ -24,16 +24,18 @@ func (h *Handler) NewUserPage(c *gin.Context) {
 	})
 }
 
-type CreateUserInput struct {
-	Username string `form:"username" binding:"required"`
-	Password string `form:"password" binding:"required"`
-}
-
 func (h *Handler) CreateUser(c *gin.Context) {
-	var input CreateUserInput
+	var input models.CreateUserInput
 	if err := c.ShouldBind(&input); err != nil {
 		h.renderPage(c, http.StatusBadRequest, "admin/users/create.html", gin.H{
 			"Error":    "Invalid form data",
+			"Username": input.Username,
+		}, PageOptions{Title: "Create User"})
+		return
+	}
+	if err := input.Validate(); err != nil {
+		h.renderPage(c, http.StatusBadRequest, "admin/users/create.html", gin.H{
+			"Error":    models.FormatValidationError(err),
 			"Username": input.Username,
 		}, PageOptions{Title: "Create User"})
 		return
@@ -69,11 +71,6 @@ func (h *Handler) EditUserPage(c *gin.Context) {
 	}, PageOptions{Title: "Edit User"})
 }
 
-type UpdateUserInput struct {
-	Username string `form:"username" binding:"required"`
-	Password string `form:"password"` // Optional, only if changing
-}
-
 func (h *Handler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -87,10 +84,18 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var input UpdateUserInput
+	var input models.UpdateUserInput
 	if err := c.ShouldBind(&input); err != nil {
 		h.renderPage(c, http.StatusBadRequest, "admin/users/edit.html", gin.H{
 			"Error": "Invalid form data",
+			"User":  user,
+		}, PageOptions{Title: "Edit User"})
+		return
+	}
+	if err := input.Validate(); err != nil {
+		user.Username = input.Username
+		h.renderPage(c, http.StatusBadRequest, "admin/users/edit.html", gin.H{
+			"Error": models.FormatValidationError(err),
 			"User":  user,
 		}, PageOptions{Title: "Edit User"})
 		return

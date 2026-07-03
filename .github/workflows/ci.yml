@@ -26,11 +26,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start test environment
-        run: docker compose -f docker-compose.with-infra.yml up -d --build --wait
+      - name: Build app image
+        run: docker compose -f docker-compose.with-infra.yml build app
+
+      - name: Start database
+        run: docker compose -f docker-compose.with-infra.yml up -d postgres --wait
 
       - name: Run migrations
         run: docker compose -f docker-compose.with-infra.yml run --rm app ./uptime-monitor migrate
+
+      - name: Start app
+        run: docker compose -f docker-compose.with-infra.yml up -d app --wait
 
       - name: Check health endpoint
         run: |

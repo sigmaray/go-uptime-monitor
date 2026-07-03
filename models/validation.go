@@ -36,6 +36,10 @@ func (input CreateUserInput) Validate() error {
 	return validate.Struct(input)
 }
 
+func (input UpdateUserInput) Validate() error {
+	return validate.Struct(input)
+}
+
 func FormatValidationError(err error) string {
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if !ok {

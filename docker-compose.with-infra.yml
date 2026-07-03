@@ -1,32 +1,34 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: go-uptime-monitor-e2e-postgres
+    container_name: go-uptime-monitor-postgres
     environment:
       POSTGRES_USER: uptimemonitor
       POSTGRES_PASSWORD: test-uptime-db
-      POSTGRES_DB: uptimemonitor
+      POSTGRES_DB: ${GO_UPTIME_MONITOR_DATABASE_NAME:-uptimemonitor}
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U uptimemonitor -d uptimemonitor"]
+      test: ["CMD-SHELL", "pg_isready -U uptimemonitor -d ${GO_UPTIME_MONITOR_DATABASE_NAME:-uptimemonitor}"]
       interval: 2s
       timeout: 5s
       retries: 15
 
   app:
     build: .
-    container_name: go-uptime-monitor-e2e-app
+    container_name: go-uptime-monitor-app
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       GIN_MODE: release
       GO_UPTIME_MONITOR_HTTP_PORT: 8080
+      GO_UPTIME_MONITOR_SESSION_SECRET: ${GO_UPTIME_MONITOR_SESSION_SECRET:-test-session-secret}
       GO_UPTIME_MONITOR_DATABASE_HOST: postgres
       GO_UPTIME_MONITOR_DATABASE_PORT: 5432
-      GO_UPTIME_MONITOR_DATABASE_NAME: uptimemonitor
+      GO_UPTIME_MONITOR_DATABASE_NAME: ${GO_UPTIME_MONITOR_DATABASE_NAME:-uptimemonitor}
       GO_UPTIME_MONITOR_DATABASE_USER: uptimemonitor
       GO_UPTIME_MONITOR_DATABASE_PASSWORD: test-uptime-db
+      GO_UPTIME_MONITOR_ENABLE_PLAYWRIGHT_API: ${GO_UPTIME_MONITOR_ENABLE_PLAYWRIGHT_API:-false}
     ports:
-      - "${GO_UPTIME_MONITOR_HTTP_PORT:-18080}:8080"
+      - "18080:8080"
