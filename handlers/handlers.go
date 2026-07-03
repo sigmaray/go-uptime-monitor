@@ -1,11 +1,16 @@
 package handlers
 
-import "gorm.io/gorm"
+import (
+	"html/template"
+
+	"gorm.io/gorm"
+)
 
 type Handler struct {
-	DB *gorm.DB
+	DB        *gorm.DB
+	Templates *template.Template
 }
 
-func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{DB: db}
+func NewHandler(db *gorm.DB, tmpl *template.Template) *Handler {
+	return &Handler{DB: db, Templates: tmpl}
 }

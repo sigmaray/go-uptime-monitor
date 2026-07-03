@@ -4,9 +4,11 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"html/template"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -16,6 +18,8 @@ import (
 	"go-uptime-monitor/handlers"
 	"go-uptime-monitor/middlewares"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
@@ -33,7 +37,7 @@ func loadEnv() {
 
 func setupLogger(level string) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	
+
 	// Convert level string to zerolog.Level
 	l, err := zerolog.ParseLevel(level)
 	if err != nil {
@@ -80,19 +84,46 @@ func runServer(cfg *config.Config) {
 
 	// Use gin.New() instead of Default() to exclude the default Logger
 	r := gin.New()
-	
+
 	// Add our structured logger and standard Recovery middleware
 	r.Use(middlewares.ZerologLogger())
 	r.Use(gin.Recovery())
 
 	gormDB := database.Connect(cfg.Database)
-	h := handlers.NewHandler(gormDB)
+	tmpl := loadHTMLTemplates(r)
+	h := handlers.NewHandler(gormDB, tmpl)
 
 	r.GET("/health", h.Health)
 
-	r.GET("/", func(c *gin.Context) {
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<!DOCTYPE html><html><head><title>Hello</title></head><body><h1>Hello, World!</h1></body></html>`))
+	store := cookie.NewStore([]byte(cfg.SessionSecret))
+	store.Options(sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 30,
+		HttpOnly: true,
+		Secure:   cfg.SessionSecure,
+		SameSite: http.SameSiteLaxMode,
 	})
+	r.Use(sessions.Sessions("mysession", store))
+
+	r.GET("/", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<!DOCTYPE html><html><head><title>Hello</title></head><body><h1>Hello, World! <a href="/admin/">Admin Panel</a></h1></body></html>`))
+	})
+
+	r.GET("/login", h.LoginPage)
+	r.POST("/login", h.Login)
+
+	admin := r.Group("/admin")
+	admin.Use(middlewares.AuthRequired())
+	{
+		admin.GET("/", h.AdminDashboard)
+		admin.GET("/users", h.UsersList)
+		admin.GET("/users/new", h.NewUserPage)
+		admin.POST("/users", h.CreateUser)
+		admin.GET("/users/:id/edit", h.EditUserPage)
+		admin.POST("/users/:id", h.UpdateUser)
+		admin.POST("/users/:id/delete", h.DeleteUser)
+		admin.POST("/logout", h.Logout)
+	}
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.HTTPPort,
@@ -121,4 +152,33 @@ func runServer(cfg *config.Config) {
 	}
 
 	log.Info().Msg("Server exiting")
+}
+
+func loadHTMLTemplates(r *gin.Engine) *template.Template {
+	patterns := []string{
+		"templates/admin/*.html",
+		"templates/admin/*/*.html",
+	}
+
+	var files []string
+	files = append(files, "templates/admin/layout.html")
+	for _, pattern := range patterns {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			log.Fatal().Err(err).Str("pattern", pattern).Msg("Failed to glob templates")
+		}
+		for _, match := range matches {
+			if match != "templates/admin/layout.html" {
+				files = append(files, match)
+			}
+		}
+	}
+
+	if len(files) == 0 {
+		log.Fatal().Msg("No HTML templates found")
+	}
+
+	tmpl := template.Must(template.ParseFiles(files...))
+	r.SetHTMLTemplate(tmpl)
+	return tmpl
 }

@@ -11,6 +11,9 @@ type Config struct {
 	GinMode  string `envconfig:"GIN_MODE" default:"release"`
 	LogLevel string `envconfig:"LOG_LEVEL" default:"info"`
 
+	SessionSecret string `envconfig:"GO_UPTIME_MONITOR_SESSION_SECRET" required:"true"`
+	SessionSecure bool   `envconfig:"GO_UPTIME_MONITOR_SESSION_SECURE" default:"false"`
+
 	Database DatabaseConfig
 }
 

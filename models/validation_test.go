@@ -1,8 +1,8 @@
 package models
 
 import (
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestCreateUserInputValidation(t *testing.T) {
@@ -50,7 +50,7 @@ func TestCreateUserInputValidation(t *testing.T) {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if err != nil && tt.errMsg != "" {
 				formatted := FormatValidationError(err)
 				if !strings.Contains(formatted, tt.errMsg) {

@@ -1,0 +1,16 @@
+{{ define "admin/users/create.html" }}
+<h2>Create New User</h2>
+
+<form action="/admin/users" method="POST" class="mt-4">
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" value="{{ .Username }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Create</button>
+    <a href="/admin/users" class="btn btn-secondary">Cancel</a>
+</form>
+{{ end }}
